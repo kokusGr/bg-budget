@@ -1,23 +1,37 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, nanoid, PayloadAction } from "@reduxjs/toolkit";
+import { z } from "zod";
 
-type BGTransaction = {
-  id: string;
-  boardgame: string;
-  date: string;
-  type: "BUY" | "SELL" | "SWAP-S" | "SWAP-B";
-  amount: number;
-  notes?: string;
-};
+const baseTransactionValidator = z.object({
+  date: z.string(),
+  amount: z.number(),
+  notes: z.string().optional(),
+});
 
-type Income = {
-  id: string;
-  date: string;
-  type: "INCOME";
-  amount: number;
-  notes?: string;
-};
+export const newTransactionValidator = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("INCOME") }).merge(baseTransactionValidator),
+  z
+    .object({
+      type: z.literal("SWAP"),
+      boardgame: z.string(),
+      boardgameSent: z.string(),
+    })
+    .merge(baseTransactionValidator),
+  z
+    .object({
+      type: z.literal("BUY"),
+      boardgame: z.string(),
+    })
+    .merge(baseTransactionValidator),
+  z
+    .object({
+      type: z.literal("SELL"),
+      boardgame: z.string(),
+    })
+    .merge(baseTransactionValidator),
+]);
 
-export type Transaction = BGTransaction | Income;
+export type NewTransactionInput = z.infer<typeof newTransactionValidator>;
+export type Transaction = NewTransactionInput & { id: string };
 
 const dummyData: Transaction[] = [
   {
@@ -43,17 +57,11 @@ const dummyData: Transaction[] = [
     amount: 1482,
   },
   {
-    id: "004",
-    boardgame: "Coimbra",
-    date: "2021-10-10",
-    type: "SWAP-B",
-    amount: 0,
-  },
-  {
     id: "005",
-    boardgame: "Le Havre",
+    boardgame: "Coimbra",
+    boardgameSent: "Le Havre",
     date: "2021-10-10",
-    type: "SWAP-S",
+    type: "SWAP",
     amount: 0,
   },
 ];
@@ -63,7 +71,18 @@ const transactionsSlice = createSlice({
   initialState: {
     value: dummyData,
   },
-  reducers: {},
+  reducers: {
+    add: {
+      reducer(state, action: PayloadAction<Transaction>) {
+        const { payload } = action;
+        state.value.push(payload);
+      },
+      prepare(data: NewTransactionInput) {
+        return { payload: { ...data, id: nanoid() } };
+      },
+    },
+  },
 });
 
 export const transactionsReducer = transactionsSlice.reducer;
+export const transactionsActions = transactionsSlice.actions;
