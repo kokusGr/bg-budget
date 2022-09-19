@@ -10,6 +10,8 @@ import {
   transactionsActions,
 } from "@/utils/transactions";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
+import { useSignInMutation } from "@/utils/api";
+import { authActions, SignInParams, signInParamsValidator } from "@/utils/auth";
 
 function formatTransactionAmount(tr: Transaction) {
   const prefix = (() => {
@@ -208,7 +210,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
   );
 }
 
-function App() {
+function TransactionsList() {
   const [isAddingNewTransaction, setIsAddingNewTransaction] = useState(false);
   const transactions = useAppSelector((state) => state.transactions.value);
 
@@ -252,6 +254,71 @@ function App() {
       )}
     </div>
   );
+}
+
+function Login() {
+  const { register, handleSubmit } = useForm<SignInParams>({
+    resolver: zodResolver(signInParamsValidator),
+  });
+  const [signIn, { isLoading }] = useSignInMutation();
+  const dispatch = useAppDispatch();
+  return (
+    <div className="bg-sky-100 h-screen w-screen flex items-center justify-center">
+      <div className="bg-white w-10/12 max-w-md rounded shadow-sm p-6">
+        <div className="border-b border-gray-300 pb-4">
+          <h3>Login to use the app</h3>
+        </div>
+        <form
+          className="space-y-6 pt-4"
+          onSubmit={handleSubmit(async (data) => {
+            try {
+              const user = await signIn(data).unwrap();
+              if (user) {
+                dispatch(authActions.setUser(user));
+              }
+            } catch (err) {}
+          })}
+        >
+          <div>
+            <Input
+              type="email"
+              label="Email"
+              placeholder="your.email@example.com"
+              {...register("email")}
+            />
+          </div>
+          <div>
+            <Input
+              type="password"
+              label="Password"
+              placeholder="*******"
+              {...register("password")}
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="flex justify-center items-center w-full px-5 py-3 text-white bg-blue-600 hover:bg-blue-700
+              focus:ring-blue-800 focus:ring-4 focus:outline-none
+              disabled:bg-blue-800 disabled:hover:bg-blue-800 disabled:text-gray-400"
+          >
+            Log in
+            {isLoading && (
+              <div className="h-5 w-5 ml-3 border-2 border-cyan-300 border-l-transparent border-b-transparent rounded-full animate-spin"></div>
+            )}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const user = useAppSelector((state) => state.auth.userId);
+
+  if (!user) return <Login />;
+
+  return <TransactionsList />;
 }
 
 export default App;
