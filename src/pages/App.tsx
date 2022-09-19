@@ -11,7 +11,12 @@ import {
 } from "@/utils/transactions";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { useSignInMutation } from "@/utils/api";
-import { authActions, SignInParams, signInParamsValidator } from "@/utils/auth";
+import {
+  authActions,
+  persistAuth,
+  SignInParams,
+  signInParamsValidator,
+} from "@/utils/auth";
 
 function formatTransactionAmount(tr: Transaction) {
   const prefix = (() => {
@@ -275,6 +280,7 @@ function Login() {
               const user = await signIn(data).unwrap();
               if (user) {
                 dispatch(authActions.setUser(user));
+                persistAuth(user);
               }
             } catch (err) {}
           })}
