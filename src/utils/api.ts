@@ -6,6 +6,8 @@ import { AuthState, SignInParams } from "@/utils/auth";
 
 const authResponseValidator = z.object({
   access_token: z.string(),
+  expires_in: z.number().positive(),
+  refresh_token: z.string(),
   user: z.object({
     id: z.string(),
   }),
@@ -27,26 +29,34 @@ const apiSlice = createApi({
     },
   }),
   endpoints: (builder) => ({
-    signIn: builder.mutation<AuthState | null, SignInParams>({
+    signIn: builder.mutation<AuthState, SignInParams>({
       query: (signInParams) => ({
         url: "auth/v1/token?grant_type=password",
         method: "POST",
         body: signInParams,
       }),
-      transformResponse: (rawData: any) => {
-        try {
-          const validated = authResponseValidator.parse(rawData);
-          return {
-            accessToken: validated.access_token,
-            userId: validated.user.id,
-          };
-        } catch (err) {
-          return null;
-        }
-      },
+      transformResponse: transformAuthResponse,
+    }),
+    refreshAuthToken: builder.mutation<AuthState, string>({
+      query: (token) => ({
+        url: "auth/v1/token?grant_type=refresh_token",
+        method: "POST",
+        body: { refresh_token: token },
+      }),
+      transformResponse: transformAuthResponse,
     }),
   }),
 });
+
+function transformAuthResponse(rawData: any) {
+  const validated = authResponseValidator.parse(rawData);
+  return {
+    accessToken: validated.access_token,
+    userId: validated.user.id,
+    expiresAt: Date.now() + validated.expires_in * 1000,
+    refreshToken: validated.refresh_token,
+  };
+}
 
 export default apiSlice;
 

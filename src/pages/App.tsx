@@ -11,12 +11,7 @@ import {
 } from "@/utils/transactions";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { useSignInMutation } from "@/utils/api";
-import {
-  authActions,
-  persistAuth,
-  SignInParams,
-  signInParamsValidator,
-} from "@/utils/auth";
+import { SignInParams, signInParamsValidator } from "@/utils/auth";
 
 function formatTransactionAmount(tr: Transaction) {
   const prefix = (() => {
@@ -275,15 +270,7 @@ function Login() {
         </div>
         <form
           className="space-y-6 pt-4"
-          onSubmit={handleSubmit(async (data) => {
-            try {
-              const user = await signIn(data).unwrap();
-              if (user) {
-                dispatch(authActions.setUser(user));
-                persistAuth(user);
-              }
-            } catch (err) {}
-          })}
+          onSubmit={handleSubmit((data) => signIn(data))}
         >
           <div>
             <Input
@@ -319,8 +306,19 @@ function Login() {
   );
 }
 
+function Loading() {
+  return (
+    <div className="bg-sky-100 h-screen w-screen flex items-center justify-center">
+      Loading…
+    </div>
+  );
+}
+
 function App() {
   const user = useAppSelector((state) => state.auth.userId);
+  const isAuthInitialized = useAppSelector((state) => state.auth.isInitialized);
+
+  if (!isAuthInitialized) return <Loading />;
 
   if (!user) return <Login />;
 
