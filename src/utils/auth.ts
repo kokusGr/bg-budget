@@ -18,8 +18,10 @@ const authStateValidator = z.object({
 export type AuthState = z.infer<typeof authStateValidator>;
 
 export const signInParamsValidator = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
+  email: z.string().min(1, { message: "Email cannot be empty" }).email(),
+  password: z
+    .string()
+    .min(8, { message: "Password must containt at least 8 characters" }),
 });
 
 export type SignInParams = z.infer<typeof signInParamsValidator>;

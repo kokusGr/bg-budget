@@ -12,6 +12,8 @@ import {
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { useSignInMutation } from "@/utils/api";
 import { SignInParams, signInParamsValidator } from "@/utils/auth";
+import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query";
+import { SerializedError } from "@reduxjs/toolkit";
 
 function formatTransactionAmount(tr: Transaction) {
   const prefix = (() => {
@@ -65,7 +67,7 @@ const Input = forwardRef<
     label: string;
   }
 >((props, ref) => {
-  const { label, ...inputProps } = props;
+  const { label, error, ...inputProps } = props;
 
   return (
     <>
@@ -81,6 +83,7 @@ const Input = forwardRef<
         id={inputProps.name}
         className="bg-neutral-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
       />
+      {error && <div className="text-sm text-red-500 pt-2">{error}</div>}
     </>
   );
 });
@@ -256,12 +259,39 @@ function TransactionsList() {
   );
 }
 
+function hasErrorMessage(data: unknown): data is { error: string } {
+  try {
+    const { error } = data as any;
+    return typeof error === "string";
+  } catch (err) {
+    return false;
+  }
+}
+const formatError = (error: FetchBaseQueryError | SerializedError) => {
+  if (
+    "status" in error &&
+    error.status === 400 &&
+    hasErrorMessage(error.data) &&
+    error.data.error === "invalid_grant"
+  ) {
+    return "Invalid login credentials. Please check your email and password.";
+  }
+
+  return "Something went wrong. Please try again later.";
+};
+
 function Login() {
-  const { register, handleSubmit } = useForm<SignInParams>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignInParams>({
     resolver: zodResolver(signInParamsValidator),
   });
-  const [signIn, { isLoading }] = useSignInMutation();
-  const dispatch = useAppDispatch();
+  const [signIn, { isLoading, error }] = useSignInMutation();
+
+  console.log("Error", error);
+
   return (
     <div className="bg-sky-100 h-screen w-screen flex items-center justify-center">
       <div className="bg-white w-10/12 max-w-md rounded shadow-sm p-6">
@@ -277,6 +307,7 @@ function Login() {
               type="email"
               label="Email"
               placeholder="your.email@example.com"
+              error={errors.email?.message}
               {...register("email")}
             />
           </div>
@@ -285,9 +316,13 @@ function Login() {
               type="password"
               label="Password"
               placeholder="*******"
+              error={errors.password?.message}
               {...register("password")}
             />
           </div>
+          {error && (
+            <div className="text-red-500 text-sm">{formatError(error)}</div>
+          )}
           <button
             type="submit"
             disabled={isLoading}
