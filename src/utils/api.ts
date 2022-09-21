@@ -45,6 +45,12 @@ const apiSlice = createApi({
       }),
       transformResponse: transformAuthResponse,
     }),
+    logout: builder.mutation<void, void>({
+      query: () => ({
+        url: "auth/v1/logout",
+        method: "POST",
+      }),
+    }),
   }),
 });
 

@@ -11,7 +11,7 @@ import {
 } from "@/utils/transactions";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import { useSignInMutation } from "@/utils/api";
-import { SignInParams, signInParamsValidator } from "@/utils/auth";
+import { authActions, SignInParams, signInParamsValidator } from "@/utils/auth";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query";
 import { SerializedError } from "@reduxjs/toolkit";
 
@@ -216,40 +216,49 @@ function NewTransactionModal(props: { onHide: () => void }) {
 function TransactionsList() {
   const [isAddingNewTransaction, setIsAddingNewTransaction] = useState(false);
   const transactions = useAppSelector((state) => state.transactions.value);
+  const dispatch = useAppDispatch();
 
   return (
     <div className="bg-sky-100 h-screen w-screen items-center flex flex-col p-10 pb-0">
-      <div className="flex items-center mb-8">
-        <h1 className="text-4xl mr-6">BG Transactions</h1>
-        <button
-          className="py-2 px-4 flex items-center justify-center bg-white rounded-lg shadow-md"
-          onClick={() => setIsAddingNewTransaction(true)}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="w-6 h-6"
+      <div className="w-10/12 relative">
+        <div className="flex items-center justify-center mb-8">
+          <h1 className="text-4xl mr-6">BG Transactions</h1>
+          <button
+            className="py-2 px-4 flex items-center justify-center bg-white rounded-lg shadow-md"
+            onClick={() => setIsAddingNewTransaction(true)}
           >
-            <path
-              fillRule="evenodd"
-              d="M12 3.75a.75.75 0 01.75.75v6.75h6.75a.75.75 0 010 1.5h-6.75v6.75a.75.75 0 01-1.5 0v-6.75H4.5a.75.75 0 010-1.5h6.75V4.5a.75.75 0 01.75-.75z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </button>
-      </div>
-      <div className="w-10/12 overflow-x-auto pb-10">
-        <div className="rounded-xl shadow-sm overflow-hidden">
-          <div className="w-full grid grid-cols-table text-xs bg-gray-50 text-gray-700 uppercase">
-            <div className="py-3 px-6">Boardgame</div>
-            <div className="py-3 px-6">Date</div>
-            <div className="py-3 px-6 text-center">Type</div>
-            <div className="py-3 px-6">Amount</div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-6 h-6"
+            >
+              <path
+                fillRule="evenodd"
+                d="M12 3.75a.75.75 0 01.75.75v6.75h6.75a.75.75 0 010 1.5h-6.75v6.75a.75.75 0 01-1.5 0v-6.75H4.5a.75.75 0 010-1.5h6.75V4.5a.75.75 0 01.75-.75z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+          <button
+            className="py-2 px-4 flex items-center justify-center bg-white rounded-lg shadow-md absolute right-0"
+            onClick={() => dispatch(authActions.logout())}
+          >
+            Log out
+          </button>
+        </div>
+        <div className="overflow-x-auto pb-10">
+          <div className="rounded-xl shadow-sm overflow-hidden">
+            <div className="w-full grid grid-cols-table text-xs bg-gray-50 text-gray-700 uppercase">
+              <div className="py-3 px-6">Boardgame</div>
+              <div className="py-3 px-6">Date</div>
+              <div className="py-3 px-6 text-center">Type</div>
+              <div className="py-3 px-6">Amount</div>
+            </div>
+            {transactions.map((transaction) => (
+              <TransactionItem key={transaction.id} transaction={transaction} />
+            ))}
           </div>
-          {transactions.map((transaction) => (
-            <TransactionItem key={transaction.id} transaction={transaction} />
-          ))}
         </div>
       </div>
       {isAddingNewTransaction && (

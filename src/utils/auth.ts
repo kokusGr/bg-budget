@@ -68,32 +68,42 @@ const authSlice = createSlice({
         isInitialized: true,
       };
     },
+    logout(state) {
+      state.userId = null;
+      state.accessToken = null;
+      state.expiresAt = null;
+      state.refreshToken = null;
+    },
     initialized(state) {
       state.isInitialized = true;
     },
   },
 });
 
+export const authReducer = authSlice.reducer;
+export const authActions = authSlice.actions;
+
 const matchAuthSuccess = isAnyOf(
   api.endpoints.refreshAuthToken.matchFulfilled,
   api.endpoints.signIn.matchFulfilled
 );
 
-function persistAuth(user: AuthState) {
-  localStorage.setItem("auth", JSON.stringify(user));
-}
-
 export const authMiddleware: Middleware<{}, RootState> =
-  ({ dispatch }) =>
-  (next) =>
-  (action) => {
+  (store) => (next) => (action) => {
+    const dispatch = store.dispatch as AppDispatch;
     if (matchAuthSuccess(action)) {
-      persistAuth(action.payload);
+      localStorage.setItem("auth", JSON.stringify(action.payload));
       dispatch(authActions.setUser(action.payload));
+    }
+
+    if (api.endpoints.refreshAuthToken.matchRejected(action)) {
+      dispatch(authActions.logout());
+    }
+
+    if (authActions.logout.match(action)) {
+      localStorage.removeItem("auth");
+      dispatch(api.endpoints.logout.initiate());
     }
 
     return next(action);
   };
-
-export const authReducer = authSlice.reducer;
-export const authActions = authSlice.actions;
