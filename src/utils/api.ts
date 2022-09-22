@@ -3,6 +3,11 @@ import { z } from "zod";
 
 import { RootState } from "@/utils/store";
 import { AuthState, SignInParams } from "@/utils/auth";
+import {
+  NewTransactionInput,
+  Transaction,
+  transactionValidator,
+} from "@/utils/transactions";
 
 const authResponseValidator = z.object({
   access_token: z.string(),
@@ -51,10 +56,26 @@ const apiSlice = createApi({
         method: "POST",
       }),
     }),
+    getTransactions: builder.query<Transaction[], void>({
+      query: () => ({
+        url: "rest/v1/Transactions?select=*",
+      }),
+      transformResponse: (rawData: unknown) => {
+        const validated = transactionValidator.array().parse(rawData);
+        return validated;
+      },
+    }),
+    addTransaction: builder.mutation<Transaction, NewTransactionInput>({
+      query: (input) => ({
+        url: "rest/v1/Transactions",
+        method: "POST",
+        body: input,
+      }),
+    }),
   }),
 });
 
-function transformAuthResponse(rawData: any) {
+function transformAuthResponse(rawData: unknown) {
   const validated = authResponseValidator.parse(rawData);
   return {
     accessToken: validated.access_token,
@@ -66,4 +87,8 @@ function transformAuthResponse(rawData: any) {
 
 export default apiSlice;
 
-export const { useSignInMutation } = apiSlice;
+export const {
+  useSignInMutation,
+  useGetTransactionsQuery,
+  useAddTransactionMutation,
+} = apiSlice;

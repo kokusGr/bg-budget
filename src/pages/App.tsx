@@ -7,10 +7,13 @@ import {
   NewTransactionInput,
   newTransactionValidator,
   Transaction,
-  transactionsActions,
 } from "@/utils/transactions";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
-import { useSignInMutation } from "@/utils/api";
+import {
+  useAddTransactionMutation,
+  useGetTransactionsQuery,
+  useSignInMutation,
+} from "@/utils/api";
 import { authActions, SignInParams, signInParamsValidator } from "@/utils/auth";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query";
 import { SerializedError } from "@reduxjs/toolkit";
@@ -39,7 +42,7 @@ function TransactionItem(props: { transaction: Transaction }) {
   return (
     <div className="grid grid-cols-table bg-white border-b text-sm">
       <div className="py-4 px-6 font-medium text-gray-900 whitespace-nowrap">
-        {transaction.type === "SWAP" && `${transaction.boardgameSent}  ==> `}
+        {transaction.type === "SWAP" && `${transaction.boardgame_sent}  ==> `}
         {transaction.boardgame}
       </div>
       <div className="py-4 px-6">{transaction.date}</div>
@@ -59,6 +62,11 @@ function TransactionItem(props: { transaction: Transaction }) {
     </div>
   );
 }
+
+const inputClassName = `block w-full p-2.5 bg-neutral-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+focus:ring-blue-500 focus:border-blue-500
+disabled:bg-gray-200 disabled:border-gray-300 disabled:text-gray-400 disabled:cursor-not-allowed
+`;
 
 const Input = forwardRef<
   HTMLInputElement,
@@ -81,7 +89,7 @@ const Input = forwardRef<
         {...inputProps}
         ref={ref}
         id={inputProps.name}
-        className="bg-neutral-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+        className={inputClassName}
       />
       {error && <div className="text-sm text-red-500 pt-2">{error}</div>}
     </>
@@ -104,7 +112,7 @@ const getInitialDate = () => {
 function NewTransactionModal(props: { onHide: () => void }) {
   const { onHide } = props;
 
-  const dispatch = useAppDispatch();
+  const [addTransaction, { isLoading }] = useAddTransactionMutation();
   const { register, watch, handleSubmit } = useForm<NewTransactionInput>({
     resolver: zodResolver(newTransactionValidator),
   });
@@ -141,8 +149,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
         <form
           className="space-y-6 pt-4 pb-2 px-7"
           onSubmit={handleSubmit((data) => {
-            dispatch(transactionsActions.add(data));
-            onHide();
+            addTransaction(data);
           })}
         >
           <div>
@@ -155,8 +162,9 @@ function NewTransactionModal(props: { onHide: () => void }) {
             <select
               {...register("type")}
               defaultValue="BUY"
+              disabled={isLoading}
               id="type"
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+              className={inputClassName}
             >
               <option value="INCOME">Income</option>
               <option value="BUY">Buy</option>
@@ -169,6 +177,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
               <Input
                 type="text"
                 label={`Boardgame ${type === "SWAP" ? "received" : ""}`}
+                disabled={isLoading}
                 placeholder="Massive Darkness 2"
                 {...register("boardgame")}
               />
@@ -179,8 +188,9 @@ function NewTransactionModal(props: { onHide: () => void }) {
               <Input
                 type="text"
                 label="Boardgame sent"
+                disabled={isLoading}
                 placeholder="Imperium Antyk"
-                {...register("boardgameSent")}
+                {...register("boardgame_sent")}
               />
             </div>
           )}
@@ -188,6 +198,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
             <Input
               type="date"
               label="Date"
+              disabled={isLoading}
               defaultValue={getInitialDate()}
               {...register("date")}
             />
@@ -196,16 +207,20 @@ function NewTransactionModal(props: { onHide: () => void }) {
             <Input
               type="number"
               label="Amount (in PLN)"
+              disabled={isLoading}
               placeholder="200"
               {...register("amount", { valueAsNumber: true })}
             />
           </div>
           <button
             type="submit"
-            disabled={false}
-            className="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+            disabled={isLoading}
+            className="flex justify-center items-center w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5"
           >
             Save
+            {isLoading && (
+              <div className="h-5 w-5 ml-3 border-2 border-cyan-300 border-l-transparent border-b-transparent rounded-full animate-spin"></div>
+            )}
           </button>
         </form>
       </div>
@@ -215,8 +230,10 @@ function NewTransactionModal(props: { onHide: () => void }) {
 
 function TransactionsList() {
   const [isAddingNewTransaction, setIsAddingNewTransaction] = useState(false);
-  const transactions = useAppSelector((state) => state.transactions.value);
+  const { data = [], isLoading, error } = useGetTransactionsQuery();
   const dispatch = useAppDispatch();
+
+  if (isLoading) return <Loading />;
 
   return (
     <div className="bg-sky-100 h-screen w-screen items-center flex flex-col p-10 pb-0">
@@ -255,7 +272,7 @@ function TransactionsList() {
               <div className="py-3 px-6 text-center">Type</div>
               <div className="py-3 px-6">Amount</div>
             </div>
-            {transactions.map((transaction) => (
+            {data.map((transaction) => (
               <TransactionItem key={transaction.id} transaction={transaction} />
             ))}
           </div>
@@ -298,8 +315,6 @@ function Login() {
     resolver: zodResolver(signInParamsValidator),
   });
   const [signIn, { isLoading, error }] = useSignInMutation();
-
-  console.log("Error", error);
 
   return (
     <div className="bg-sky-100 h-screen w-screen flex items-center justify-center">
