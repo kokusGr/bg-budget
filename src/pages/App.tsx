@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState, forwardRef, useEffect } from "react";
+import { useState, forwardRef, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -260,6 +260,12 @@ function TransactionsList() {
   const { data = [], isLoading, error } = useGetTransactionsQuery();
   const dispatch = useAppDispatch();
 
+  const sortedTransactions = useMemo(() => {
+    return [...data].sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+  }, [data]);
+
   if (isLoading) return <Loading />;
 
   return (
@@ -298,7 +304,7 @@ function TransactionsList() {
             <div className="py-3 px-6 text-center">Type</div>
             <div className="py-3 px-6">Amount</div>
           </div>
-          {data.map((transaction) => (
+          {sortedTransactions.map((transaction) => (
             <TransactionItem key={transaction.id} transaction={transaction} />
           ))}
         </div>
