@@ -33,6 +33,7 @@ const apiSlice = createApi({
       return headers;
     },
   }),
+  tagTypes: ["Transactions"],
   endpoints: (builder) => ({
     signIn: builder.mutation<AuthState, SignInParams>({
       query: (signInParams) => ({
@@ -64,6 +65,7 @@ const apiSlice = createApi({
         const validated = transactionValidator.array().parse(rawData);
         return validated;
       },
+      providesTags: [{ type: "Transactions", id: "LIST" }],
     }),
     addTransaction: builder.mutation<Transaction, NewTransactionInput>({
       query: (input) => ({
@@ -71,6 +73,7 @@ const apiSlice = createApi({
         method: "POST",
         body: input,
       }),
+      invalidatesTags: [{ type: "Transactions", id: "LIST" }],
     }),
   }),
 });

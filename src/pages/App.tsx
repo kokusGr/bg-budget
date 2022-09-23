@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useState, forwardRef } from "react";
+import { useState, forwardRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -113,7 +113,8 @@ const getInitialDate = () => {
 function NewTransactionModal(props: { onHide: () => void }) {
   const { onHide } = props;
 
-  const [addTransaction, { isLoading, error }] = useAddTransactionMutation();
+  const [addTransaction, { isLoading, error, isSuccess }] =
+    useAddTransactionMutation();
   const {
     register,
     watch,
@@ -124,6 +125,12 @@ function NewTransactionModal(props: { onHide: () => void }) {
   });
 
   const type = watch("type");
+
+  useEffect(() => {
+    if (isSuccess) {
+      onHide();
+    }
+  }, [isSuccess]);
 
   return (
     <div className="fixed top-0 right-0 left-0 bottom-0 z-50">
