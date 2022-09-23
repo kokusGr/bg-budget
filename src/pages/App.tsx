@@ -7,6 +7,7 @@ import {
   NewTransactionInput,
   newTransactionValidator,
   Transaction,
+  TransactionFields,
 } from "@/utils/transactions";
 import { useAppDispatch, useAppSelector } from "@/utils/hooks";
 import {
@@ -113,7 +114,12 @@ function NewTransactionModal(props: { onHide: () => void }) {
   const { onHide } = props;
 
   const [addTransaction, { isLoading }] = useAddTransactionMutation();
-  const { register, watch, handleSubmit } = useForm<NewTransactionInput>({
+  const {
+    register,
+    watch,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<TransactionFields>({
     resolver: zodResolver(newTransactionValidator),
   });
 
@@ -171,6 +177,11 @@ function NewTransactionModal(props: { onHide: () => void }) {
               <option value="SELL">Sell</option>
               <option value="SWAP">Swap</option>
             </select>
+            {errors.type?.message && (
+              <div className="text-sm text-red-500 pt-2">
+                {errors.type.message}
+              </div>
+            )}
           </div>
           {type !== "INCOME" && (
             <div>
@@ -179,6 +190,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
                 label={`Boardgame ${type === "SWAP" ? "received" : ""}`}
                 disabled={isLoading}
                 placeholder="Massive Darkness 2"
+                error={errors.boardgame?.message}
                 {...register("boardgame")}
               />
             </div>
@@ -190,6 +202,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
                 label="Boardgame sent"
                 disabled={isLoading}
                 placeholder="Imperium Antyk"
+                error={errors.boardgame_sent?.message}
                 {...register("boardgame_sent")}
               />
             </div>
@@ -199,6 +212,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
               type="date"
               label="Date"
               disabled={isLoading}
+              error={errors.date?.message}
               defaultValue={getInitialDate()}
               {...register("date")}
             />
@@ -208,6 +222,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
               type="number"
               label="Amount (in PLN)"
               disabled={isLoading}
+              error={errors.amount?.message}
               placeholder="200"
               {...register("amount", { valueAsNumber: true })}
             />
