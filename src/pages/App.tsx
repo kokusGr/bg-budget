@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
-  NewTransactionInput,
   newTransactionValidator,
   Transaction,
   TransactionFields,
@@ -34,8 +33,11 @@ function TransactionItem(props: { transaction: Transaction }) {
 
   if (transaction.type === "INCOME") {
     return (
-      <div className="w-full bg-white border-b text-sm text-center my-2 py-4 font-medium text-gray-900">
-        NEW MONIEZ: {transaction.amount} 🎉
+      <div className="w-full bg-white border-b text-sm text-center my-1 py-4 font-medium text-gray-900">
+        NEW MONIEZ: {transaction.amount} PLN 🎉
+        <span className="w-[150px] absolute right-0 px-6 text-left">
+          {transaction.balance} PLN
+        </span>
       </div>
     );
   }
@@ -60,6 +62,7 @@ function TransactionItem(props: { transaction: Transaction }) {
         </span>
       </div>
       <div className="py-4 px-6">{formatTransactionAmount(transaction)}</div>
+      <div className="py-4 px-6">{transaction.balance} PLN</div>
     </div>
   );
 }
@@ -260,12 +263,6 @@ function TransactionsList() {
   const { data = [], isLoading, error } = useGetTransactionsQuery();
   const dispatch = useAppDispatch();
 
-  const sortedTransactions = useMemo(() => {
-    return [...data].sort((a, b) => {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    });
-  }, [data]);
-
   if (isLoading) return <Loading />;
 
   return (
@@ -303,8 +300,9 @@ function TransactionsList() {
             <div className="py-3 px-6">Date</div>
             <div className="py-3 px-6 text-center">Type</div>
             <div className="py-3 px-6">Amount</div>
+            <div className="py-3 px-6">Balance</div>
           </div>
-          {sortedTransactions.map((transaction) => (
+          {data.map((transaction) => (
             <TransactionItem key={transaction.id} transaction={transaction} />
           ))}
         </div>

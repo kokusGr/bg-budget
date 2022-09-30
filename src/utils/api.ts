@@ -6,7 +6,8 @@ import { AuthState, SignInParams } from "@/utils/auth";
 import {
   NewTransactionInput,
   Transaction,
-  transactionValidator,
+  responseTransactionValidator,
+  transformTransactionResponse,
 } from "@/utils/transactions";
 
 const authResponseValidator = z.object({
@@ -61,10 +62,7 @@ const apiSlice = createApi({
       query: () => ({
         url: "rest/v1/Transactions?select=*",
       }),
-      transformResponse: (rawData: unknown) => {
-        const validated = transactionValidator.array().parse(rawData);
-        return validated;
-      },
+      transformResponse: transformTransactionResponse,
       providesTags: [{ type: "Transactions", id: "LIST" }],
     }),
     addTransaction: builder.mutation<Transaction, NewTransactionInput>({
