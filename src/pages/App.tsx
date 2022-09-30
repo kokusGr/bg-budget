@@ -258,6 +258,39 @@ function NewTransactionModal(props: { onHide: () => void }) {
   );
 }
 
+function TransactionsListBody(props: {
+  error: FetchBaseQueryError | SerializedError | undefined;
+  data: Transaction[];
+}) {
+  const { error, data } = props;
+
+  const errorMessage = (() => {
+    if (error)
+      return "Something went wrong when loading transactions. Please try again later.";
+    if (data.length === 0)
+      return "No transactions yet. Add your first transaction using the button above";
+    return null;
+  })();
+
+  if (errorMessage) {
+    return (
+      <>
+        <div className="bg-gray-50 text-gray-600 py-10 flex justify-center">
+          <span className="w-[40ch] text-center">{errorMessage}</span>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {data.map((transaction) => (
+        <TransactionItem key={transaction.id} transaction={transaction} />
+      ))}
+    </>
+  );
+}
+
 function TransactionsList() {
   const [isAddingNewTransaction, setIsAddingNewTransaction] = useState(false);
   const { data = [], isLoading, error } = useGetTransactionsQuery();
@@ -302,9 +335,7 @@ function TransactionsList() {
             <div className="py-3 px-6">Amount</div>
             <div className="py-3 px-6">Balance</div>
           </div>
-          {data.map((transaction) => (
-            <TransactionItem key={transaction.id} transaction={transaction} />
-          ))}
+          <TransactionsListBody data={data} error={error} />
         </div>
       </div>
       {isAddingNewTransaction && (
