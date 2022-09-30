@@ -234,6 +234,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
                 type === "SWAP" ? "Amount received" : "Amount"
               } (in PLN)`}
               disabled={isLoading}
+              step="0.01"
               error={errors.amount?.message}
               placeholder="200"
               {...register("amount", { valueAsNumber: true })}
@@ -246,6 +247,7 @@ function NewTransactionModal(props: { onHide: () => void }) {
                 label="Amount sent (in PLN)"
                 disabled={isLoading}
                 error={errors.amount_sent?.message}
+                step="0.01"
                 placeholder="0"
                 {...register("amount_sent", { valueAsNumber: true })}
               />
