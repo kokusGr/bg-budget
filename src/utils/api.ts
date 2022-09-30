@@ -6,7 +6,6 @@ import { AuthState, SignInParams } from "@/utils/auth";
 import {
   NewTransactionInput,
   Transaction,
-  responseTransactionValidator,
   transformTransactionResponse,
 } from "@/utils/transactions";
 
@@ -21,13 +20,10 @@ const authResponseValidator = z.object({
 
 const apiSlice = createApi({
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://urkulngsrbxxxpcvtkqq.supabase.co",
+    baseUrl: import.meta.env.VITE_API_URL,
     prepareHeaders(headers, { getState }) {
       const state = getState() as RootState;
-      headers.set(
-        "apikey",
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVya3VsbmdzcmJ4eHhwY3Z0a3FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NjM0MDM1NjYsImV4cCI6MTk3ODk3OTU2Nn0.bda9D6kQs8eSW5vkykb4I_Yl-SELT2ekq-MrPWmp5LY"
-      );
+      headers.set("apikey", import.meta.env.VITE_API_KEY);
       if (state.auth.accessToken) {
         headers.set("Authorization", `Bearer ${state.auth.accessToken}`);
       }

@@ -17,6 +17,9 @@
     "jsx": "react-jsx",
     "noUncheckedIndexedAccess": true,
     "strictNullChecks": true,
+    "allowUnreachableCode": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
