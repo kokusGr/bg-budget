@@ -230,13 +230,27 @@ function NewTransactionModal(props: { onHide: () => void }) {
           <div>
             <Input
               type="number"
-              label="Amount (in PLN)"
+              label={`${
+                type === "SWAP" ? "Amount received" : "Amount"
+              } (in PLN)`}
               disabled={isLoading}
               error={errors.amount?.message}
               placeholder="200"
               {...register("amount", { valueAsNumber: true })}
             />
           </div>
+          {type === "SWAP" && (
+            <div>
+              <Input
+                type="number"
+                label="Amount sent (in PLN)"
+                disabled={isLoading}
+                error={errors.amount_sent?.message}
+                placeholder="0"
+                {...register("amount_sent", { valueAsNumber: true })}
+              />
+            </div>
+          )}
           {error && (
             <div className="text-red-500 text-sm">
               Something went wrong. Please try again later.
