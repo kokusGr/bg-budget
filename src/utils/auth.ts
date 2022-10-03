@@ -26,27 +26,27 @@ export const signInParamsValidator = z.object({
 
 export type SignInParams = z.infer<typeof signInParamsValidator>;
 
+const VALIDATION_BUFFER = 1000 * 60;
+
 export async function restoreUserSession(dispatch: AppDispatch) {
-  const auth = localStorage.getItem("auth");
+  const auth = getPersistedAuth();
   if (!auth) {
     dispatch(authActions.initialized());
     return;
   }
 
-  try {
-    const parsed = JSON.parse(auth);
-    const validated = authStateValidator.parse(parsed);
-    if (validated.expiresAt && validated.expiresAt > Date.now() + 30 * 1000) {
-      dispatch(authActions.setUser(validated));
-      return;
-    }
-
-    validated.refreshToken &&
-      dispatch(api.endpoints.refreshAuthToken.initiate(validated.refreshToken));
-  } catch (err) {
-    dispatch(authActions.initialized());
+  if (auth.expiresAt && auth.expiresAt > Date.now() + VALIDATION_BUFFER) {
+    dispatch(authActions.setUser(auth));
     return;
   }
+
+  if (auth.refreshToken) {
+    dispatch(api.endpoints.refreshAuthToken.initiate(auth.refreshToken));
+    return;
+  }
+
+  dispatch(authActions.initialized());
+  return;
 }
 
 const initialState: AuthState & { isInitialized: boolean } = {
@@ -88,11 +88,36 @@ const matchAuthSuccess = isAnyOf(
   api.endpoints.signIn.matchFulfilled
 );
 
+let timer: number;
+
+const scheduleTokenRefresh = (
+  dispatch: AppDispatch,
+  expiresAt: number
+): void => {
+  if (timer) {
+    clearTimeout(timer);
+  }
+
+  const timeout = expiresAt - Date.now() - VALIDATION_BUFFER;
+
+  timer = setTimeout(() => {
+    const auth = getPersistedAuth();
+    if (auth?.refreshToken) {
+      dispatch(api.endpoints.refreshAuthToken.initiate(auth.refreshToken));
+    } else {
+      dispatch(authActions.logout());
+    }
+  }, timeout);
+};
+
 export const authMiddleware: Middleware<{}, RootState> =
   (store) => (next) => (action) => {
     const dispatch = store.dispatch as AppDispatch;
     if (matchAuthSuccess(action)) {
+      const { expiresAt } = action.payload;
       localStorage.setItem("auth", JSON.stringify(action.payload));
+
+      expiresAt && scheduleTokenRefresh(dispatch, expiresAt);
       dispatch(authActions.setUser(action.payload));
     }
 
@@ -107,3 +132,16 @@ export const authMiddleware: Middleware<{}, RootState> =
 
     return next(action);
   };
+
+function getPersistedAuth(): AuthState | null {
+  const auth = localStorage.getItem("auth");
+  if (!auth) return null;
+
+  try {
+    const parsed = JSON.parse(auth);
+    const validated = authStateValidator.parse(parsed);
+    return validated;
+  } catch (err) {
+    return null;
+  }
+}
