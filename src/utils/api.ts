@@ -61,12 +61,21 @@ const apiSlice = createApi({
       transformResponse: transformTransactionResponse,
       providesTags: [{ type: "Transactions", id: "LIST" }],
     }),
-    addTransaction: builder.mutation<Transaction, NewTransactionInput>({
-      query: (input) => ({
-        url: "rest/v1/Transactions",
-        method: "POST",
-        body: input,
-      }),
+    addTransaction: builder.mutation<unknown, NewTransactionInput>({
+      queryFn: async (input, { getState }, _, baseQuery) => {
+        // TODO: How to type this correctly?
+        const state = getState() as any;
+        if (!state.auth.userId) {
+          throw new Error("Missing userID when adding new transaction!");
+        }
+
+        const owner_id = state.auth.userId;
+        return await baseQuery({
+          url: "rest/v1/Transactions",
+          method: "POST",
+          body: { ...input, owner_id },
+        });
+      },
       invalidatesTags: [{ type: "Transactions", id: "LIST" }],
     }),
   }),
